@@ -17,7 +17,7 @@ DynamoDB ARN (for KCL):
 arn:aws:dynamodb:<region>:<account>:table/<name>
 ```
 
-In `Policy.json`:
+Create `Policy.json`:
 ```
 {
   "Version": "2012-10-17",
@@ -59,3 +59,5 @@ In `Policy.json`:
   ]
 }
 ```
+Create policy:
+```aws iam create-policy --policy-name kexPolicy --policy-document file://policy.json```
