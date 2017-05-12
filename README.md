@@ -143,3 +143,51 @@ aws kinesisanalytics create-application --application-name kex-analytics --regio
 ```
 Configure the source stream in the console
 
+1. Tumbling window - count the buy/sell within every 10 seconds
+```
+CREATE OR REPLACE STREAM "DESTINATION_SQL_STREAM_tw" (tradetype VARCHAR(4), trade_count INTEGER);
+-- Create a pump which continuously selects from a source stream (SOURCE_SQL_STREAM_001)
+-- performs an aggregate count that is grouped by columns ticker over a 10-second tumbling window
+-- and inserts into output stream (DESTINATION_SQL_STREAM)
+CREATE OR REPLACE  PUMP "STREAM_PUMP_tw" AS INSERT INTO "DESTINATION_SQL_STREAM_tw"
+-- Aggregate function COUNT|AVG|MAX|MIN|SUM|STDDEV_POP|STDDEV_SAMP|VAR_POP|VAR_SAMP)
+SELECT STREAM tradetype, COUNT(*) AS trade_count
+FROM "SOURCE_SQL_STREAM_001"
+-- Uses a 10-second tumbling time window
+GROUP BY tradetype, FLOOR(("SOURCE_SQL_STREAM_001".ROWTIME - TIMESTAMP '1970-01-01 00:00:00') SECOND / 10 TO SECOND);
+```
+
+2. a. Sliding window - count the buy/sell in every 10 seconds (overlapped)
+```
+CREATE OR REPLACE STREAM "DESTINATION_SQL_STREAM_sw" (tradetype VARCHAR(4), trade_count INTEGER);
+-- Create a pump which continuously selects from a source stream (SOURCE_SQL_STREAM_001)
+-- performs an aggregate count that is grouped by columns ticker over a 10-second sliding window
+CREATE OR REPLACE PUMP "STREAM_PUMP_sw" AS INSERT INTO "DESTINATION_SQL_STREAM_sw"
+-- COUNT|AVG|MAX|MIN|SUM|STDDEV_POP|STDDEV_SAMP|VAR_POP|VAR_SAMP)
+SELECT STREAM tradetype, COUNT(*) OVER FIVE_SECOND_SLIDING_WINDOW AS trade_count
+FROM "SOURCE_SQL_STREAM_001"
+-- Results partitioned by ticker_symbol and a 10-second sliding time window 
+WINDOW FIVE_SECOND_SLIDING_WINDOW AS (
+  PARTITION BY tradetype
+  RANGE INTERVAL '5' SECOND PRECEDING);
+```
+2. b. 2 Sliding window - count the buy/sell in last 10 rows and 5 rows (overlapped)
+```
+CREATE OR REPLACE STREAM "DESTINATION_SQL_STREAM_sw2" (tradetype VARCHAR(4), trade_count_5 INTEGER, avg_price_5 DOUBLE, trade_count_10 INTEGER, avg_price_10 DOUBLE);
+-- Create a pump which continuously selects from a source stream (SOURCE_SQL_STREAM_001)
+-- performs an aggregate count that is grouped by columns ticker over a 10-second sliding window
+CREATE OR REPLACE PUMP "STREAM_PUMP_sw2" AS INSERT INTO "DESTINATION_SQL_STREAM_sw2"
+-- COUNT|AVG|MAX|MIN|SUM|STDDEV_POP|STDDEV_SAMP|VAR_POP|VAR_SAMP)
+SELECT STREAM tradetype, COUNT(*) OVER FIVE_ROWS_SLIDING_WINDOW AS trade_count_5, AVG(price) OVER FIVE_ROWS_SLIDING_WINDOW AS avg_price_5,
+              COUNT(*) OVER TEN_ROWS_SLIDING_WINDOW AS trade_count_10, AVG(price) OVER TEN_ROWS_SLIDING_WINDOW AS avg_price_10
+FROM "SOURCE_SQL_STREAM_001"
+-- Results partitioned by ticker_symbol and a 10-second sliding time window 
+WINDOW 
+FIVE_ROWS_SLIDING_WINDOW AS (
+  PARTITION BY tradetype
+  ROWS 5 PRECEDING),
+TEN_ROWS_SLIDING_WINDOW AS (
+  PARTITION BY tradetype
+  ROWS 10 PRECEDING);
+```
+
