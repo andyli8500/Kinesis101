@@ -130,7 +130,7 @@ done
 ```
 
 ## Firehose
-change the put record above to firehose
+change the `put-record` above to firehose
 ```
 ...
 aws firehose put-record --delivery-stream-name kex-fh --record Data="'$data'" --region us-east-1
