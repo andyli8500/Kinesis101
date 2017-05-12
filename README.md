@@ -1,5 +1,6 @@
 # Kinesis101
 
+## Streams
 ### Create a Stream
 ```
 aws kinesis create-stream --stream-name kex --shard-count 1
@@ -126,4 +127,12 @@ do
     # put record
     aws kinesis put-record --stream-name kex --data "$data" --partition-key $id
 done
+```
+
+## Firehose
+change the put record above to firehose
+```
+...
+aws firehose put-record --delivery-stream-name kex-fh --record Data="'$data'" --region us-east-1
+...
 ```
