@@ -191,3 +191,61 @@ TEN_ROWS_SLIDING_WINDOW AS (
   ROWS 10 PRECEDING);
 ```
 
+## Multi
+Pushing data through multi-shards in Kinesis
+Using Partition key (HASH KEY)
+
+Python:
+```python
+from __future__ import print_function, division
+
+import json
+import sys
+import decimal
+import boto3
+from time import sleep
+
+def put_records(client, stream_name, infile):
+    with open(infile) as data:
+        records = json.load(data, encoding='latin-1', parse_float=decimal.Decimal)
+        R = []
+
+        for i, record in enumerate(records):
+            r = {}
+
+            r['Data'] = json.dumps(record)
+            r['PartitionKey'] = str(record['value'])
+
+            R.append(r)
+
+            if i % 500 is 0:
+                print('pushing batch...')
+
+                response = client.put_records(Records=R, StreamName=stream_name)
+                print('Fail:', response['FailedRecordCount'])
+                print('ShardId:', [res['ShardId'] for res in response['Records']])
+                R = []
+                sleep(1)
+
+
+
+def main():
+    input_file = sys.argv[1]
+
+    client = boto3.client('kinesis', region_name='us-east-1')
+
+    # create stream
+    stream_name = 'input-stream'
+    try:
+        client.create_stream(StreamName=stream_name,ShardCount=1)
+
+        # wait to available
+        print('waiting for available...')
+        waiter = client.get_waiter('stream_exists')
+        waiter.wait(StreamName=stream_name)
+    except:
+        print(stream_name, 'existed.')
+
+    # put records
+    put_records(client, stream_name, input_file)
+```
