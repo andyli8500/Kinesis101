@@ -90,3 +90,40 @@ The sample trading records looks:
  "id": 3567129045}
 ```
 
+put_record.sh
+```
+#!/bin/bash
+
+TickerSymbol=( "AMZN-1" "AMZN-2" "AMZN-3" "AMZN-4"
+               "AMZN-5" "AMZN-6" "AMZN-7" "AMZN-8"
+               "AMZN-9" "AMZN-10" "AMZN-11" "AMZN-12" )
+
+TradeType=( "BUY" "SELL" )
+
+for i in {0..1000000}
+do
+    id=$i
+    quantity=$(shuf -i 1-1000 -n 1)
+    single_price=$(shuf -i 1-1000 -n 1)
+    price=$(expr $single_price \* $quantity)
+
+    t_1=${#TickerSymbol[@]}
+    idx=$(($RANDOM % $t_1))
+    symbol=${TickerSymbol[$idx]}
+
+    t_2=${#TradeType[@]}
+    idx=$(($RANDOM % $t_2))
+    ttype=${TradeType[$idx]}
+
+    data="{
+            tickerSymbol: $symbol, 
+            tradeType: $ttype,
+            price: $price,
+            quantity: $quantity,
+            id: $id
+}"
+    echo "$data"
+    # put record
+    aws kinesis put-record --stream-name kex --data "$data" --partition-key $id
+done
+```
