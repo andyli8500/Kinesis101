@@ -2,7 +2,7 @@
 
 ## Streams
 ### Create a Stream
-```
+```bash
 aws kinesis create-stream --stream-name kex --shard-count 1
 aws kinesis wait stream-exists --stream-nam kex
 ```
@@ -92,7 +92,7 @@ The sample trading records looks:
 ```
 
 put_record.sh
-```
+```bash
 #!/bin/bash
 
 TickerSymbol=( "AMZN-1" "AMZN-2" "AMZN-3" "AMZN-4"
@@ -144,7 +144,7 @@ aws kinesisanalytics create-application --application-name kex-analytics --regio
 Configure the source stream in the console
 
 1. Tumbling window - count the buy/sell within every 10 seconds
-```
+```sql
 CREATE OR REPLACE STREAM "DESTINATION_SQL_STREAM_tw" (tradetype VARCHAR(4), trade_count INTEGER);
 -- Create a pump which continuously selects from a source stream (SOURCE_SQL_STREAM_001)
 -- performs an aggregate count that is grouped by columns ticker over a 10-second tumbling window
@@ -158,7 +158,7 @@ GROUP BY tradetype, FLOOR(("SOURCE_SQL_STREAM_001".ROWTIME - TIMESTAMP '1970-01-
 ```
 
 2. a. Sliding window - count the buy/sell in every 10 seconds (overlapped)
-```
+```sql
 CREATE OR REPLACE STREAM "DESTINATION_SQL_STREAM_sw" (tradetype VARCHAR(4), trade_count INTEGER);
 -- Create a pump which continuously selects from a source stream (SOURCE_SQL_STREAM_001)
 -- performs an aggregate count that is grouped by columns ticker over a 10-second sliding window
@@ -172,7 +172,7 @@ WINDOW FIVE_SECOND_SLIDING_WINDOW AS (
   RANGE INTERVAL '5' SECOND PRECEDING);
 ```
 2. b. 2 Sliding window - count the buy/sell in last 10 rows and 5 rows (overlapped)
-```
+```sql
 CREATE OR REPLACE STREAM "DESTINATION_SQL_STREAM_sw2" (tradetype VARCHAR(4), trade_count_5 INTEGER, avg_price_5 DOUBLE, trade_count_10 INTEGER, avg_price_10 DOUBLE);
 -- Create a pump which continuously selects from a source stream (SOURCE_SQL_STREAM_001)
 -- performs an aggregate count that is grouped by columns ticker over a 10-second sliding window
