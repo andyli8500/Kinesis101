@@ -18,7 +18,7 @@ DynamoDB ARN (for KCL):
 arn:aws:dynamodb:<region>:<account>:table/<name>
 ```
 Create `Policy.json`:
-```
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
